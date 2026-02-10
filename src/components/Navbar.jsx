@@ -5,6 +5,21 @@ import { Link } from 'react-router-dom';
 const Navbar = ({ cartCount, setIsCartOpen, isAdmin, setIsAdmin }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
+  const handleAdminToggle = () => {
+    if (isAdmin) {
+      setIsAdmin(false);
+      return;
+    }
+
+    const password = window.prompt("Enter Admin Password:");
+    if (password === "udezin@admin") {
+      setIsAdmin(true);
+      alert("Welcome Admin!");
+    } else if (password !== null) {
+      alert("Incorrect Password");
+    }
+  };
+
   return (
     <nav className="fixed w-full z-50 top-0 bg-[#0B1C33]/90 backdrop-blur-md border-b border-[#D49D42]/20 shadow-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -27,7 +42,7 @@ const Navbar = ({ cartCount, setIsCartOpen, isAdmin, setIsAdmin }) => {
 
             <div className="flex items-center space-x-4">
               <button
-                onClick={() => setIsAdmin(!isAdmin)}
+                onClick={handleAdminToggle}
                 className={`p-2 rounded-full transition-colors ${isAdmin ? 'bg-red-500/20 text-red-400' : 'text-gray-400 hover:text-white'}`}
                 title={isAdmin ? "Exit Admin Mode" : "Enter Admin Mode"}
               >
@@ -46,14 +61,14 @@ const Navbar = ({ cartCount, setIsCartOpen, isAdmin, setIsAdmin }) => {
 
           {/* Mobile Menu Button */}
           <div className="md:hidden flex items-center gap-4">
-             <button onClick={() => setIsCartOpen(true)} className="relative p-2 text-white">
-                <ShoppingBag size={24} />
-                {cartCount > 0 && (
-                  <span className="absolute top-0 right-0 h-5 w-5 bg-[#D49D42] rounded-full flex items-center justify-center text-xs font-bold text-[#0B1C33]">
-                    {cartCount}
-                  </span>
-                )}
-              </button>
+            <button onClick={() => setIsCartOpen(true)} className="relative p-2 text-white">
+              <ShoppingBag size={24} />
+              {cartCount > 0 && (
+                <span className="absolute top-0 right-0 h-5 w-5 bg-[#D49D42] rounded-full flex items-center justify-center text-xs font-bold text-[#0B1C33]">
+                  {cartCount}
+                </span>
+              )}
+            </button>
             <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-white">
               {isMenuOpen ? <X size={28} /> : <Menu size={28} />}
             </button>
@@ -67,7 +82,7 @@ const Navbar = ({ cartCount, setIsCartOpen, isAdmin, setIsAdmin }) => {
           <div className="flex flex-col space-y-4 text-center">
             <Link to="/" onClick={() => setIsMenuOpen(false)} className="text-white py-2 font-bold tracking-widest hover:text-[#D49D42]">HOME</Link>
             <Link to="/products" onClick={() => setIsMenuOpen(false)} className="text-white py-2 font-bold tracking-widest hover:text-[#D49D42]">PRODUCTS</Link>
-            <button onClick={() => { setIsAdmin(!isAdmin); setIsMenuOpen(false); }} className="text-gray-400 py-2">
+            <button onClick={() => { handleAdminToggle(); setIsMenuOpen(false); }} className="text-gray-400 py-2">
               {isAdmin ? "Exit Admin" : "Admin Login"}
             </button>
           </div>

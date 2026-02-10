@@ -15,15 +15,15 @@ const Home = lazy(() => import('./pages/Home'));
 const Products = lazy(() => import('./pages/Products'));
 
 const App = () => {
-  const [products, setProducts] = useState([]);
-  const [projects, setProjects] = useState([]);
+  const [products, setProducts] = useState(INITIAL_PRODUCTS);
+  const [projects, setProjects] = useState(INITIAL_PROJECTS);
   const [cart, setCart] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [activeCategory, setActiveCategory] = useState("All");
   const [editingProduct, setEditingProduct] = useState(null);
   const [editingProject, setEditingProject] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Start false to show initial content immediately
 
   // --- ADMIN FUNCTIONS ---
   const [uploading, setUploading] = useState(false);
@@ -59,7 +59,7 @@ const App = () => {
   // FETCH DATA FROM SUPABASE
   const fetchData = async () => {
     try {
-      setLoading(true);
+      // Don't set loading=true here to avoid flashing the loader
       // Fetch Products
       const { data: productsData, error: productsError } = await supabase
         .from('products')
@@ -76,26 +76,20 @@ const App = () => {
 
       if (projectsError) throw projectsError;
 
-      // If database is empty, fallback to initial data (optional, but good for first load)
+      // Update state only if we got data
       if (productsData && productsData.length > 0) {
         setProducts(productsData);
-      } else {
-        setProducts(INITIAL_PRODUCTS); // Fallback so site isn't empty
       }
 
       if (projectsData && projectsData.length > 0) {
         setProjects(projectsData);
-      } else {
-        setProjects(INITIAL_PROJECTS); // Fallback
       }
 
     } catch (error) {
       console.error("Error fetching data:", error);
-      // Fallback on error
-      setProducts(INITIAL_PRODUCTS);
-      setProjects(INITIAL_PROJECTS);
+      // No need to fallback, we started with initial data
     } finally {
-      setLoading(false);
+      // setLoading(false);
     }
   };
 

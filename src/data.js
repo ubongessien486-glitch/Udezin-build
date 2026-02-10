@@ -97,14 +97,6 @@ export const INITIAL_PRODUCTS = [
     "stock": "In Stock"
   },
   {
-    "id": 1767122189984,
-    "name": "Ceiling Profile  ",
-    "category": "Interior",
-    "price": 1900,
-    "image": "https://qakkayfzwkfggidyjxhf.supabase.co/storage/v1/object/public/images/1770663806760.jpeg",
-    "stock": "In Stock"
-  },
-  {
     "id": 1767122139520,
     "name": "Green Board moisture resistant ",
     "category": "Interior",

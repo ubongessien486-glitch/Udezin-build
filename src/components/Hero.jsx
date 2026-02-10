@@ -6,9 +6,15 @@ const Hero = () => {
             {/* Background Image with Overlay */}
             <div className="absolute inset-0 z-0">
                 <img
-                    src="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&q=80&w=2000"
+                    src="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&q=80&w=1200"
+                    srcSet="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&q=80&w=600 600w,
+                            https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&q=80&w=1200 1200w,
+                            https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&q=80&w=2000 2000w"
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 100vw"
                     alt="Luxury Interior"
                     className="w-full h-full object-cover opacity-40"
+                    loading="eager" // Hero image should be eager loaded
+                    fetchPriority="high" // Prioritize LCP
                 />
                 <div className="absolute inset-0 bg-gradient-to-r from-[#0B1C33] via-[#0B1C33]/90 to-[#0B1C33]/70"></div>
                 <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(#D49D42 1px, transparent 1px)', backgroundSize: '30px 30px', opacity: 0.1 }}></div>
