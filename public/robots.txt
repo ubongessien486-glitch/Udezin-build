@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://udezin.com/sitemap.xml
