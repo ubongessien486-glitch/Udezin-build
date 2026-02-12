@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 
 const Hero = () => {
     return (
@@ -44,3 +44,4 @@ const Hero = () => {
 };
 
 export default Hero;
+

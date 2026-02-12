@@ -1,4 +1,522 @@
-﻿export const INITIAL_PRODUCTS = [
+## package.json
+```json
+{
+  "name": "dynamic-tyson",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.91.0",
+    "lucide-react": "^0.344.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^7.13.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "autoprefixer": "^10.4.19",
+    "eslint": "^9.0.0",
+    "eslint-plugin-react-hooks": "^5.1.0-rc.0",
+    "eslint-plugin-react-refresh": "^0.4.7",
+    "globals": "^15.0.0",
+    "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.4",
+    "vite": "^5.4.11"
+  }
+}
+
+```
+
+## vercel.json
+```json
+{
+    "rewrites": [
+        {
+            "source": "/(.*)",
+            "destination": "/index.html"
+        }
+    ]
+}
+```
+
+## vite.config.js
+```javascript
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+// https://vite.dev/config/
+export default defineConfig({
+  plugins: [react()],
+})
+
+```
+
+## index.html
+```html
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Primary Meta Tags -->
+  <title>Udezin - Premium Building Materials & Site Works</title>
+  <meta name="title" content="Udezin - Premium Building Materials & Site Works" />
+  <meta name="description"
+    content="Supply of 100% authentic POP materials, Gypsum boards, and premium décor. Expert site project execution in Lagos, Port Harcourt, and beyond. Build with confidence." />
+  <meta name="keywords"
+    content="POP materials, Gypsum board, Wall decor, Building materials Nigeria, Udezin, Construction, Interior design" />
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://udezin.com/" />
+  <meta property="og:title" content="Udezin - Premium Building Materials & Site Works" />
+  <meta property="og:description"
+    content="Supply of 100% authentic POP materials, Gypsum boards, and premium décor. Expert site project execution in Lagos, Port Harcourt, and beyond." />
+  <meta property="og:image" content="/images/3d_wall_panel.png" />
+
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image" />
+  <meta property="twitter:url" content="https://udezin.com/" />
+  <meta property="twitter:title" content="Udezin - Premium Building Materials & Site Works" />
+  <meta property="twitter:description"
+    content="Supply of 100% authentic POP materials, Gypsum boards, and premium décor. Expert site project execution." />
+  <meta property="twitter:image" content="/images/3d_wall_panel.png" />
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+
+</html>
+```
+
+## src/main.jsx
+```javascript
+import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+import './index.css'
+import App from './App.jsx'
+
+createRoot(document.getElementById('root')).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+)
+
+```
+
+## src/App.jsx
+```javascript
+import React, { useState, useEffect, Suspense, lazy } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { supabase } from './supabase';
+
+import { INITIAL_PRODUCTS, INITIAL_PROJECTS } from './data';
+
+// Components
+import Navbar from './components/Navbar';
+import Footer from './components/Footer';
+import CartSidebar from './components/CartSidebar';
+import AdminDashboard from './components/AdminDashboard';
+
+// Pages
+const Home = lazy(() => import('./pages/Home'));
+const Products = lazy(() => import('./pages/Products'));
+
+const App = () => {
+  const [products, setProducts] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [cart, setCart] = useState([]);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [activeCategory, setActiveCategory] = useState("All");
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [editingProject, setEditingProject] = useState(null);
+  const [loading, setLoading] = useState(false); // Start false to show initial content immediately
+
+  // --- ADMIN FUNCTIONS ---
+  const [uploading, setUploading] = useState(false);
+
+  // Helper to compress image
+  const compressImage = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target.result;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 800;
+          const scaleSize = MAX_WIDTH / img.width;
+          canvas.width = MAX_WIDTH;
+          canvas.height = img.height * scaleSize;
+
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+          // Compress to JPEG at 70% quality
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+          resolve(dataUrl);
+        };
+        img.onerror = (err) => reject(err);
+      };
+      reader.onerror = (err) => reject(err);
+    });
+  };
+
+  // FETCH DATA FROM SUPABASE
+  const fetchData = async () => {
+    try {
+      // Don't set loading=true here to avoid flashing the loader
+      // Fetch Products
+      const { data: productsData, error: productsError } = await supabase
+        .from('products')
+        .select('*')
+        .order('id', { ascending: false });
+
+      if (productsError) throw productsError;
+
+      // Fetch Projects
+      const { data: projectsData, error: projectsError } = await supabase
+        .from('projects')
+        .select('*')
+        .order('id', { ascending: false });
+
+      if (projectsError) throw projectsError;
+
+      // Update state only if we got data
+      if (productsData && productsData.length > 0) {
+        setProducts(productsData);
+      }
+
+      if (projectsData && projectsData.length > 0) {
+        setProjects(projectsData);
+      }
+
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      // No need to fallback, we started with initial data
+    } finally {
+      // setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const addToCart = (product) => {
+    setCart([...cart, product]);
+    setIsCartOpen(true);
+  };
+
+  const removeFromCart = (index) => {
+    const newCart = [...cart];
+    newCart.splice(index, 1);
+    setCart(newCart);
+  };
+
+  const handleAddProduct = async (e) => {
+    e.preventDefault();
+    setUploading(true);
+
+    const formData = new FormData(e.target);
+    const file = formData.get('imageFile');
+    const existingImageUrl = formData.get('image');
+
+    // Helper to upload image to Supabase Storage
+    const uploadImage = async (imageFile) => {
+      try {
+        const fileExt = imageFile.name.split('.').pop();
+        const fileName = `${Date.now()}.${fileExt}`;
+        const filePath = `${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('images')
+          .upload(filePath, imageFile);
+
+        if (uploadError) throw uploadError;
+
+        const { data } = supabase.storage.from('images').getPublicUrl(filePath);
+        return data.publicUrl;
+      } catch (error) {
+        console.error("Error uploading image:", error);
+        alert("Failed to upload image to cloud storage.");
+        return null;
+      }
+    };
+
+    // Helper to process the final logic
+    const processSubmission = async (finalImageUrl) => {
+      try {
+        // --- PROJECT EDITING LOGIC ---
+        if (editingProject) {
+          const { error } = await supabase
+            .from('projects')
+            .update({
+              title: formData.get('name'),
+              location: formData.get('location_status'),
+              image: finalImageUrl || editingProject.image
+            })
+            .eq('id', editingProject.id);
+
+          if (error) throw error;
+          alert("Project Updated!");
+          setEditingProject(null);
+        }
+        // --- PRODUCT EDITING LOGIC ---
+        else if (editingProduct) {
+          const { error } = await supabase
+            .from('products')
+            .update({
+              name: formData.get('name'),
+              price: Number(formData.get('price')),
+              category: formData.get('category'),
+              image: finalImageUrl || editingProduct.image
+            })
+            .eq('id', editingProduct.id);
+
+          if (error) throw error;
+          alert("Product Updated!");
+          setEditingProduct(null);
+        }
+        // --- ADD NEW PRODUCT LOGIC ---
+        else {
+          const newProduct = {
+            id: Date.now(),
+            name: formData.get('name'),
+            price: Number(formData.get('price')),
+            category: formData.get('category'),
+            image: finalImageUrl || 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=1000',
+            stock: "In Stock"
+          };
+
+          const { error } = await supabase
+            .from('products')
+            .insert([newProduct]);
+
+          if (error) throw error;
+          alert("Material Added Successfully!");
+        }
+
+        // Refresh data after any operation
+        fetchData();
+        e.target.reset();
+
+      } catch (error) {
+        console.error("Error saving data:", error);
+        alert(`Error: ${error.message || "Failed to save data"}`);
+      } finally {
+        setUploading(false);
+      }
+    };
+
+    // --- IMAGE PROCESSING ---
+    if (file && file.size > 0) {
+      try {
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+          alert("Please upload a valid image file");
+          setUploading(false);
+          return;
+        }
+
+        // Upload to Supabase Storage
+        const publicUrl = await uploadImage(file);
+        if (publicUrl) {
+          processSubmission(publicUrl);
+        } else {
+          setUploading(false);
+        }
+      } catch (err) {
+        console.error("Image processing error:", err);
+        alert("Error processing image. Please try a different file.");
+        setUploading(false);
+      }
+    } else {
+      processSubmission(existingImageUrl || null);
+    }
+  };
+
+  const handleEditProduct = (product) => {
+    setEditingProduct(product);
+    setEditingProject(null); // Ensure we aren't editing a project
+    document.getElementById('admin-panel').scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const handleEditProject = (project) => {
+    setEditingProject(project);
+    setEditingProduct(null); // Ensure we aren't editing a product
+    document.getElementById('admin-panel').scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const handleDeleteProduct = async (id) => {
+    if (window.confirm("Delete this material?")) {
+      try {
+        const { error } = await supabase
+          .from('products')
+          .delete()
+          .eq('id', id);
+
+        if (error) throw error;
+
+        if (editingProduct && editingProduct.id === id) {
+          setEditingProduct(null);
+        }
+        fetchData(); // Refresh UI
+      } catch (error) {
+        console.error("Error deleting:", error);
+        alert("Failed to delete.");
+      }
+    }
+  };
+
+  const handleExportData = () => {
+    // Export BOTH products and projects
+    const exportData = {
+      products: products,
+      projects: projects
+    };
+
+    const dataStr = JSON.stringify(exportData, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+    const exportFileDefaultName = 'udezein_data.json';
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+  };
+
+  // --- CLOUD SYNC FUNCTIONS ---
+  const handlePushToSupabase = async () => {
+    if (!window.confirm("CAUTION: This will OVERWRITE the cloud database with your current local data. Continue?")) return;
+
+    try {
+      setLoading(true);
+      // Upsert Products
+      const { error: prodError } = await supabase.from('products').upsert(products);
+      if (prodError) throw prodError;
+
+      // Upsert Projects
+      const { error: projError } = await supabase.from('projects').upsert(projects);
+      if (projError) throw projError;
+
+      alert("✅ SUCCESS: Data saved to Cloud Database!");
+    } catch (err) {
+      console.error(err);
+      alert("❌ ERROR: Could not save to cloud. Check console.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePullFromSupabase = async () => {
+    if (!window.confirm("CAUTION: This will OVERWRITE your local view with data from the cloud. Continue?")) return;
+    fetchData(); // Re-fetch from Supabase
+  };
+
+  return (
+    <Router>
+      <div className="min-h-screen bg-[#F8FAFC] text-[#0B1C33] font-sans selection:bg-[#D49D42] selection:text-white">
+
+        <Navbar
+          cartCount={cart.length}
+          setIsCartOpen={setIsCartOpen}
+          isAdmin={isAdmin}
+          setIsAdmin={setIsAdmin}
+        />
+
+        {/* Global Admin Dashboard - Appears above content when needed */}
+        <AdminDashboard
+          isAdmin={isAdmin}
+          editingProject={editingProject}
+          editingProduct={editingProduct}
+          setEditingProduct={setEditingProduct}
+          setEditingProject={setEditingProject}
+
+          handleAddProduct={handleAddProduct}
+          handleExportData={handleExportData}
+          handlePushToSupabase={handlePushToSupabase}
+          handlePullFromSupabase={handlePullFromSupabase}
+          uploading={uploading}
+        />
+
+        {loading ? (
+          <div className="h-screen flex items-center justify-center">
+            <div className="text-2xl font-bold text-[#D49D42] animate-pulse">Loading Udezin...</div>
+          </div>
+        ) : (
+          <Suspense fallback={
+            <div className="h-screen flex items-center justify-center">
+              <div className="text-2xl font-bold text-[#D49D42] animate-pulse">Loading Udezin...</div>
+            </div>
+          }>
+            <Routes>
+              <Route path="/" element={
+                <Home
+                  projects={projects}
+                  isAdmin={isAdmin}
+                  handleEditProject={handleEditProject}
+                />
+              } />
+              <Route path="/products" element={
+                <Products
+                  products={products}
+                  activeCategory={activeCategory}
+                  setActiveCategory={setActiveCategory}
+                  isAdmin={isAdmin}
+                  handleEditProduct={handleEditProduct}
+                  handleDeleteProduct={handleDeleteProduct}
+                  addToCart={addToCart}
+                />
+              } />
+            </Routes>
+          </Suspense>
+        )}
+
+        <CartSidebar
+          cart={cart}
+          isOpen={isCartOpen}
+          onClose={() => setIsCartOpen(false)}
+          removeFromCart={removeFromCart}
+        />
+
+        <Footer />
+
+      </div>
+    </Router>
+  );
+};
+
+export default App;
+
+```
+
+## src/index.css
+```css
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+```
+
+## src/data.js
+```javascript
+export const INITIAL_PRODUCTS = [
 
   {
     "id": 1770646837734,
@@ -276,4 +794,824 @@ export const INITIAL_PROJECTS = [
     "image": "/images/loading_gypsum.jpg"
   }
 ];
+
+```
+
+## src/supabase.js
+```javascript
+
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = 'https://qakkayfzwkfggidyjxhf.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFha2theWZ6d2tmZ2dpZHlqeGhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc4NzEyMzEsImV4cCI6MjA4MzQ0NzIzMX0.swHHIqyDPmWTJ-FFrR4m3QfWf6__5f4zcQflYMsom5c';
+
+export const supabase = createClient(supabaseUrl, supabaseKey);
+
+```
+
+## src/components/Navbar.jsx
+```javascript
+import React, { useState } from 'react';
+import { ShoppingBag, Layers, Lock, Unlock, Menu, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
+
+const Navbar = ({ cartCount, setIsCartOpen, isAdmin, setIsAdmin }) => {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const handleAdminToggle = () => {
+    if (isAdmin) {
+      setIsAdmin(false);
+      return;
+    }
+
+    const password = window.prompt("Enter Admin Password:");
+    if (password === "udezin@admin") {
+      setIsAdmin(true);
+      alert("Welcome Admin!");
+    } else if (password !== null) {
+      alert("Incorrect Password");
+    }
+  };
+
+  return (
+    <nav className="fixed w-full z-50 top-0 bg-[#0B1C33]/90 backdrop-blur-md border-b border-[#D49D42]/20 shadow-lg">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-20">
+          {/* Logo */}
+          <Link to="/" className="flex items-center space-x-2 group">
+            <Layers className="h-8 w-8 text-[#D49D42] group-hover:rotate-12 transition-transform" />
+            <div>
+              <h1 className="text-2xl font-bold text-white tracking-wider">UDEZE<span className="text-[#D49D42]">in</span></h1>
+              <p className="text-[0.6rem] text-gray-400 tracking-[0.2em] uppercase">Circle of Builders</p>
+            </div>
+          </Link>
+
+          {/* Desktop Nav */}
+          <div className="hidden md:flex items-center space-x-8">
+            <div className="flex space-x-6 text-sm font-bold tracking-widest text-gray-300">
+              <Link to="/" className="hover:text-[#D49D42] transition relative after:content-[''] after:absolute after:-bottom-1 after:left-0 after:w-0 after:h-0.5 after:bg-[#D49D42] hover:after:w-full after:transition-all">HOME</Link>
+              <Link to="/products" className="hover:text-[#D49D42] transition relative after:content-[''] after:absolute after:-bottom-1 after:left-0 after:w-0 after:h-0.5 after:bg-[#D49D42] hover:after:w-full after:transition-all">PRODUCTS</Link>
+            </div>
+
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={handleAdminToggle}
+                className={`p-2 rounded-full transition-colors ${isAdmin ? 'bg-red-500/20 text-red-400' : 'text-gray-400 hover:text-white'}`}
+                title={isAdmin ? "Exit Admin Mode" : "Enter Admin Mode"}
+              >
+                {isAdmin ? <Unlock size={18} /> : <Lock size={18} />}
+              </button>
+              <button onClick={() => setIsCartOpen(true)} className="relative p-2 text-white hover:text-[#D49D42] transition">
+                <ShoppingBag size={24} />
+                {cartCount > 0 && (
+                  <span className="absolute top-0 right-0 h-5 w-5 bg-[#D49D42] rounded-full flex items-center justify-center text-xs font-bold text-[#0B1C33] animate-bounce">
+                    {cartCount}
+                  </span>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Mobile Menu Button */}
+          <div className="md:hidden flex items-center gap-4">
+            <button onClick={() => setIsCartOpen(true)} className="relative p-2 text-white">
+              <ShoppingBag size={24} />
+              {cartCount > 0 && (
+                <span className="absolute top-0 right-0 h-5 w-5 bg-[#D49D42] rounded-full flex items-center justify-center text-xs font-bold text-[#0B1C33]">
+                  {cartCount}
+                </span>
+              )}
+            </button>
+            <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-white">
+              {isMenuOpen ? <X size={28} /> : <Menu size={28} />}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Menu */}
+      {isMenuOpen && (
+        <div className="md:hidden bg-[#0B1C33] border-t border-gray-800 p-4 animate-slide-down">
+          <div className="flex flex-col space-y-4 text-center">
+            <Link to="/" onClick={() => setIsMenuOpen(false)} className="text-white py-2 font-bold tracking-widest hover:text-[#D49D42]">HOME</Link>
+            <Link to="/products" onClick={() => setIsMenuOpen(false)} className="text-white py-2 font-bold tracking-widest hover:text-[#D49D42]">PRODUCTS</Link>
+            <button onClick={() => { handleAdminToggle(); setIsMenuOpen(false); }} className="text-gray-400 py-2">
+              {isAdmin ? "Exit Admin" : "Admin Login"}
+            </button>
+          </div>
+        </div>
+      )}
+    </nav>
+  );
+};
+
+export default Navbar;
+
+```
+
+## src/components/Footer.jsx
+```javascript
+import React from 'react';
+import { MapPin, Phone, Mail } from 'lucide-react';
+
+const Footer = () => {
+    return (
+        <footer className="bg-[#0B1C33] text-white py-12 border-t border-[#D49D42]/30">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="grid md:grid-cols-3 gap-8 mb-12 text-center md:text-left">
+                    <div>
+                        <h2 className="text-2xl font-bold tracking-widest mb-4">UDEZE<span className="text-[#D49D42]">in</span></h2>
+                        <p className="text-gray-400 text-sm">Building Legacies across Nigeria.</p>
+                    </div>
+
+                    <div className="space-y-4 text-sm text-gray-300">
+                        <div className="flex items-center justify-center md:justify-start gap-3">
+                            <MapPin size={16} className="text-[#D49D42]" />
+                            <span>2 Shiro Street, Fadeyi, Lagos</span>
+                        </div>
+                        <div className="flex flex-col items-center md:items-start gap-1">
+                            <div className="flex items-center gap-3">
+                                <Phone size={16} className="text-[#D49D42]" />
+                                <span>+234 909 068 9338</span>
+                            </div>
+                            <div className="pl-7 text-gray-400 text-xs">
+                                <p>0708 473 8330</p>
+                                <p>0806 491 3559</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center justify-center md:justify-start gap-3">
+                            <Mail size={16} className="text-[#D49D42]" />
+                            <a href="mailto:infomedetails@gmail.com" className="hover:text-white transition">infomedetails@gmail.com</a>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col items-center md:items-end justify-center">
+                        <a
+                            href="https://wa.me/2349090689338"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 bg-[#25D366] text-white px-6 py-3 rounded-full font-bold hover:bg-[#128C7E] transition mb-4"
+                        >
+                            <Phone size={18} /> Chat on WhatsApp
+                        </a>
+                        <p className="text-xs text-gray-500 mb-4">Available 9am - 6pm</p>
+
+                        <div className="flex gap-4 text-gray-400">
+                            <a href="https://instagram.com/udezein" target="_blank" rel="noopener noreferrer" className="hover:text-[#D49D42] transition flex flex-col items-center">
+                                <span className="text-xs">IG: udezein</span>
+                            </a>
+                            <a href="https://tiktok.com/@_udezein" target="_blank" rel="noopener noreferrer" className="hover:text-[#D49D42] transition flex flex-col items-center">
+                                <span className="text-xs">TikTok: _udezein</span>
+                            </a>
+                            <a href="https://twitter.com/udezein" target="_blank" rel="noopener noreferrer" className="hover:text-[#D49D42] transition flex flex-col items-center">
+                                <span className="text-xs">X: udezein</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="border-t border-gray-800 pt-8 text-center">
+                    <p className="text-[#D49D42] text-xs tracking-widest uppercase">© 2025 Udezein. Building Legacies.</p>
+                </div>
+            </div>
+        </footer>
+    );
+};
+
+export default Footer;
+
+```
+
+## src/components/Hero.jsx
+```javascript
+import React from 'react';
+
+const Hero = () => {
+    return (
+        <div className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden bg-[#0B1C33]">
+            {/* Background Image with Overlay */}
+            <div className="absolute inset-0 z-0">
+                <img
+                    src="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&q=80&w=1200"
+                    srcSet="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&q=80&w=600 600w,
+                            https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&q=80&w=1200 1200w,
+                            https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&q=80&w=2000 2000w"
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 100vw"
+                    alt="Luxury Interior"
+                    className="w-full h-full object-cover opacity-40"
+                    loading="eager" // Hero image should be eager loaded
+                    fetchPriority="high" // Prioritize LCP
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-[#0B1C33] via-[#0B1C33]/90 to-[#0B1C33]/70"></div>
+                <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(#D49D42 1px, transparent 1px)', backgroundSize: '30px 30px', opacity: 0.1 }}></div>
+            </div>
+
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+                <span className="inline-block py-1 px-3 border border-[#D49D42] rounded-full text-[#D49D42] text-xs tracking-[0.2em] uppercase mb-6 animate-fade-in-up">
+                    TRUSTED BY NIGERIA'S TOP BUILDERS
+                </span>
+                <h1 className="text-4xl md:text-6xl font-bold text-white mb-8 tracking-tight leading-tight">
+                    Build with materials that will <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#D49D42] to-[#F8FAFC]">stand the test of time...</span>
+                </h1>
+                <p className="text-xl text-gray-400 max-w-2xl mx-auto mb-10 font-light">
+                    The company specializes in building construction services, focusing on the supply of authentic materials and expert installation.
+                </p>
+                <div className="flex flex-col sm:flex-row justify-center gap-4">
+                    <a href="/products" className="px-8 py-4 bg-[#D49D42] text-[#0B1C33] font-bold tracking-wide hover:bg-white transition-all transform hover:scale-105 inline-block">
+                        VIEW PRICE LIST
+                    </a>
+                    <a href="#site-works" className="px-8 py-4 border border-gray-600 text-white font-medium hover:border-[#D49D42] hover:text-[#D49D42] transition-all flex items-center justify-center">
+                        SITE PROJECTS
+                    </a>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default Hero;
+
+```
+
+## src/components/Services.jsx
+```javascript
+import React from 'react';
+import { Hammer, Truck, ShieldCheck, Layers } from 'lucide-react';
+
+const Services = () => {
+    const services = [
+        {
+            title: "Supply of Materials",
+            icon: <Truck size={32} className="text-[#D49D42]" />,
+            items: [
+                { name: "Drywall & Ceilings", desc: "Gypsum boards, cement boards, and frames." },
+                { name: "Insulation", desc: "Rockwool and fiberglass for optimal thermal control." }
+            ]
+        },
+        {
+            title: "Installation Services",
+            icon: <Hammer size={32} className="text-[#D49D42]" />,
+            items: [
+                { name: "Wall & Ceiling Installation", desc: "Expert fixing and finishing." },
+                { name: "Soundproofing Solutions", desc: "Professional acoustic treatments." }
+            ]
+        }
+    ];
+
+    return (
+        <section className="py-20 bg-white">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="text-center mb-16">
+                    <h2 className="text-3xl font-bold text-[#0B1C33] mb-4">Services Offered</h2>
+                    <div className="w-20 h-1 bg-[#D49D42] mx-auto"></div>
+                    <p className="mt-4 text-gray-600 max-w-2xl mx-auto">
+                        The company specializes in building construction services, specifically focusing on quality supply and professional installation.
+                    </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                    {services.map((service, index) => (
+                        <div key={index} className="bg-[#F8FAFC] p-8 rounded-2xl border border-gray-100 hover:shadow-lg transition-shadow">
+                            <div className="flex items-center gap-4 mb-6">
+                                <div className="p-3 bg-white rounded-full shadow-sm">
+                                    {service.icon}
+                                </div>
+                                <h3 className="text-2xl font-bold text-[#0B1C33]">{service.title}</h3>
+                            </div>
+
+                            <div className="space-y-6">
+                                {service.items.map((item, idx) => (
+                                    <div key={idx} className="flex gap-4">
+                                        <div className="mt-1">
+                                            <ShieldCheck size={20} className="text-green-600" />
+                                        </div>
+                                        <div>
+                                            <h4 className="text-lg font-semibold text-[#0B1C33]">{item.name}</h4>
+                                            <p className="text-gray-500">{item.desc}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </section>
+    );
+};
+
+export default Services;
+
+```
+
+## src/components/SiteWorksGallery.jsx
+```javascript
+import React from 'react';
+import { Edit3, MapPin } from 'lucide-react';
+
+const SiteWorksGallery = ({ projects, isAdmin, handleEditProject }) => {
+    return (
+        <div className="py-20 bg-white">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <h2 className="text-3xl font-bold text-[#0B1C33] mb-12 flex items-center gap-4">
+                    <span className="w-12 h-1 bg-[#D49D42]"></span>
+                    SITE PROGRESS
+                </h2>
+                <div className="grid md:grid-cols-2 gap-8">
+                    {projects
+                        .filter(p => p.section === 'site')
+                        .map(project => (
+                            <div key={project.id} className="group relative overflow-hidden rounded-xl bg-white shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
+                                <div className="relative aspect-[4/3] overflow-hidden">
+                                    <img
+                                        src={project.image}
+                                        alt={project.title}
+                                        className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60 group-hover:opacity-80 transition-opacity"></div>
+
+                                    {isAdmin && (
+                                        <button
+                                            onClick={() => handleEditProject(project)}
+                                            className="absolute top-2 right-2 bg-white/90 p-2 rounded-full shadow-lg hover:bg-[#D49D42] hover:text-white transition-colors z-20"
+                                            title="Edit project"
+                                        >
+                                            <Edit3 size={16} />
+                                        </button>
+                                    )}
+
+                                    <div className="absolute bottom-0 left-0 right-0 p-6 text-white translate-y-2 group-hover:translate-y-0 transition-transform">
+                                        <span className={`inline-block px-3 py-1 text-xs font-bold uppercase tracking-wider mb-2 ${project.status === 'Completed' ? 'bg-[#D49D42] text-[#0B1C33]' : 'bg-blue-500 text-white'}`}>
+                                            {project.status}
+                                        </span>
+                                        <h3 className="text-xl font-bold mb-1 font-playfair">{project.title}</h3>
+                                        <div className="flex items-center gap-2 text-gray-300 mt-2 text-sm">
+                                            <MapPin size={14} /> {project.location || "Lagos, Nigeria"}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default SiteWorksGallery;
+
+```
+
+## src/components/PHShowcase.jsx
+```javascript
+import React from 'react';
+import { Edit3, MapPin } from 'lucide-react';
+
+const PHShowcase = ({ projects, isAdmin, handleEditProject }) => {
+    return (
+        <div className="py-20 bg-[#0B1C33] text-white">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="mb-12">
+                    <h2 className="text-3xl font-bold flex items-center gap-4">
+                        <span className="w-12 h-1 bg-[#D49D42]"></span>
+                        EXPANDING TO PORT HARCOURT
+                    </h2>
+                    <p className="text-gray-400 mt-4 ml-16 max-w-xl">
+                        Bringing premium finishes to the Garden City. We now offer dedicated logistics and supply chain services for massive developments in Rivers State.
+                    </p>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-8">
+                    {projects
+                        .filter(p => p.section === 'ph')
+                        .map(project => (
+                            <div key={project.id} className="relative group overflow-hidden rounded-xl aspect-[4/3] transition-all duration-300 hover:-translate-y-2 hover:shadow-xl">
+                                <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition duration-500 z-10"></div>
+
+                                {isAdmin && (
+                                    <button
+                                        onClick={() => handleEditProject(project)}
+                                        className="absolute top-2 right-2 bg-white/90 p-2 rounded-full text-black shadow-lg hover:bg-[#D49D42] hover:text-white transition-colors z-30"
+                                        title="Edit project"
+                                    >
+                                        <Edit3 size={16} />
+                                    </button>
+                                )}
+
+                                <img
+                                    src={project.image}
+                                    alt={project.title}
+                                    className="w-full h-full object-cover transform group-hover:scale-110 transition duration-700"
+                                />
+                                <div className="absolute bottom-6 left-6 z-20">
+                                    <div className="flex items-center gap-2 text-[#D49D42] text-sm font-bold tracking-wider mb-2">
+                                        <MapPin size={16} /> {project.location}
+                                    </div>
+                                    <h3 className="text-2xl font-bold">{project.title}</h3>
+                                </div>
+                            </div>
+                        ))}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default PHShowcase;
+
+```
+
+## src/components/AdminDashboard.jsx
+```javascript
+import React from 'react';
+import { Unlock } from 'lucide-react';
+
+const AdminDashboard = ({
+    isAdmin,
+    editingProject,
+    editingProduct,
+    setEditingProduct,
+    setEditingProject,
+    handleAddProduct,
+    handleExportData,
+    handlePushToSupabase,
+    handlePullFromSupabase,
+    uploading
+}) => {
+    if (!isAdmin) return null;
+
+    return (
+        <div id="admin-panel" className="relative z-40 mt-20 bg-gray-100 border-b-4 border-red-500 p-8 animate-slide-down shadow-xl">
+            <div className="max-w-7xl mx-auto">
+                <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-2xl font-bold text-[#0B1C33] flex items-center gap-2">
+                        <Unlock className="text-red-500" /> Admin Control Center <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Cloud Sync v2.0</span>
+                    </h2>
+                    <div className="flex gap-2">
+                        <button onClick={handleExportData} className="text-sm bg-[#0B1C33] text-white px-4 py-2 rounded-full hover:bg-[#D49D42] transition">
+                            Export Data (JSON)
+                        </button>
+                        <div className="flex bg-white rounded-full border border-gray-300 overflow-hidden">
+                            <button onClick={handlePushToSupabase} className="px-3 py-1 text-xs font-bold text-white bg-green-600 hover:bg-green-700 border-r border-green-700" title="Save to Cloud">
+                                CLOUD SAVE
+                            </button>
+                            <button onClick={handlePullFromSupabase} className="px-3 py-1 text-xs font-bold text-[#0B1C33] hover:bg-gray-100" title="Load from Cloud">
+                                LOAD
+                            </button>
+                        </div>
+                        <span className="text-sm bg-red-100 text-red-600 px-3 py-1 rounded-full flex items-center">Secure Mode Active</span>
+                    </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-8">
+                    <div className="bg-white p-6 rounded-lg shadow-sm">
+                        <div className="flex items-center justify-between mb-8">
+                            <h2 className="text-2xl font-bold flex items-center gap-2">
+                                {editingProject
+                                    ? `Edit Project: ${editingProject.title}`
+                                    : editingProduct
+                                        ? `Edit: ${editingProduct.name}`
+                                        : "Add New Material"
+                                }
+                            </h2>
+                            {(editingProduct || editingProject) && (
+                                <button
+                                    onClick={() => {
+                                        setEditingProduct(null);
+                                        setEditingProject(null);
+                                    }}
+                                    className="text-sm text-red-500 hover:text-red-700 underline"
+                                >
+                                    Cancel Edit
+                                </button>
+                            )}
+                        </div>
+                        <form onSubmit={handleAddProduct} className="space-y-4">
+                            <input
+                                name="name"
+                                defaultValue={editingProject ? editingProject.title : editingProduct?.name}
+                                key={editingProject ? `proj-${editingProject.id}` : editingProduct ? `prod-${editingProduct.id}` : 'new'}
+                                required
+                                placeholder={editingProject ? "Project Title" : "Product Name"}
+                                className="w-full p-3 border border-gray-200 rounded focus:border-[#0B1C33] outline-none"
+                            />
+                            <div className="grid grid-cols-2 gap-4">
+                                {editingProject ? (
+                                    <input
+                                        name="location_status"
+                                        defaultValue={editingProject.location}
+                                        key={`loc-${editingProject.id}`}
+                                        placeholder="Location / Status"
+                                        className="w-full p-3 border border-gray-200 rounded"
+                                    />
+                                ) : (
+                                    <select
+                                        name="category"
+                                        defaultValue={editingProduct?.category}
+                                        key={editingProduct ? `${editingProduct.id}-cat` : 'new-cat'}
+                                        className="w-full p-3 border border-gray-200 rounded bg-white"
+                                    >
+                                        <option>Interior</option>
+                                        <option>Exterior</option>
+                                        <option>Wall Decor</option>
+                                        <option>Accessories</option>
+                                    </select>
+                                )}
+
+                                {!editingProject && (
+                                    <input
+                                        name="price"
+                                        type="number"
+                                        defaultValue={editingProduct?.price}
+                                        key={editingProduct ? `${editingProduct.id}-price` : 'new-price'}
+                                        required
+                                        placeholder="Price (₦)"
+                                        className="w-full p-3 border border-gray-200 rounded"
+                                    />
+                                )}
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Upload Image</label>
+                                <input name="imageFile" type="file" accept="image/*" className="w-full p-2 border border-gray-200 rounded text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#0B1C33] file:text-white hover:file:bg-[#D49D42]" />
+                                <div className="relative flex py-2 items-center">
+                                    <div className="flex-grow border-t border-gray-200"></div>
+                                    <span className="flex-shrink-0 mx-4 text-gray-400 text-xs">OR</span>
+                                    <div className="flex-grow border-t border-gray-200"></div>
+                                </div>
+                                <input name="image" placeholder="Paste Image URL instead" defaultValue={editingProduct?.image?.startsWith('http') ? editingProduct.image : ''} className="w-full p-3 border border-gray-200 rounded" />
+                            </div>
+                            <button
+                                type="submit"
+                                disabled={uploading}
+                                className={`w-full py-3 font-bold transition flex justify-center items-center gap-2 ${uploading ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#0B1C33] hover:bg-[#D49D42] text-white'}`}
+                            >
+                                {uploading ? (
+                                    <>
+                                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                        Processing...
+                                    </>
+                                ) : (
+                                    editingProduct ? "UPDATE MATERIAL" : "ADD TO INVENTORY"
+                                )}
+                            </button>
+                        </form>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-lg shadow-sm flex items-center justify-center border-2 border-dashed border-gray-300 text-gray-400">
+                        <p className="text-center">Project Gallery Uploads<br />(Coming Soon in v2.0)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default AdminDashboard;
+
+```
+
+## src/components/CartSidebar.jsx
+```javascript
+import React from 'react';
+import { ShoppingBag, X, Phone, Layers } from 'lucide-react';
+
+const CartSidebar = ({ cart, isOpen, onClose, removeFromCart }) => {
+    const calculateTotal = () => cart.reduce((sum, item) => sum + Number(String(item.price).replace(/[^0-9.-]+/g, "")), 0);
+
+    const sendWhatsAppQuote = () => {
+        const message = `*QUOTATION REQUEST - UDEZEin*\n\n` +
+            cart.map(item => `- ${item.name}: ₦${item.price.toLocaleString()}`).join('\n') +
+            `\n\n*Total Estimate: ₦${calculateTotal().toLocaleString()}*`;
+
+        // Replace with your actual number
+        window.open(`https://wa.me/2349090689338?text=${encodeURIComponent(message)}`, '_blank');
+    };
+
+    return (
+        <div className={`fixed inset-0 z-[60] transform transition-transform duration-300 ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose}></div>
+            <div className="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl flex flex-col">
+                <div className="p-6 bg-[#0B1C33] text-white flex justify-between items-center">
+                    <h2 className="text-xl font-bold flex items-center gap-2"><ShoppingBag size={20} /> QUOTATION LIST</h2>
+                    <button onClick={onClose} className="hover:text-[#D49D42]"><X /></button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                    {cart.length === 0 ? (
+                        <div className="text-center text-gray-400 mt-20">
+                            <Layers size={48} className="mx-auto mb-4 opacity-20" />
+                            <p>Your list is empty.</p>
+                        </div>
+                    ) : (
+                        cart.map((item, index) => (
+                            <div key={index} className="flex gap-4 items-center bg-gray-50 p-4 rounded-lg border border-gray-100">
+                                <img src={item.image} className="w-16 h-16 object-cover rounded" alt="" />
+                                <div className="flex-1">
+                                    <h4 className="font-bold text-[#0B1C33] text-sm">{item.name}</h4>
+                                    <p className="text-[#D49D42] text-sm font-mono">₦{Number(String(item.price).replace(/[^0-9.-]+/g, "")).toLocaleString()}</p>
+                                </div>
+                                <button onClick={() => removeFromCart(index)} className="text-gray-300 hover:text-red-500"><X size={16} /></button>
+                            </div>
+                        ))
+                    )}
+                </div>
+
+                <div className="p-6 bg-gray-50 border-t border-gray-200">
+                    <div className="flex justify-between mb-4 text-lg font-bold text-[#0B1C33]">
+                        <span>Est. Total</span>
+                        <span className="font-mono">₦{calculateTotal().toLocaleString()}</span>
+                    </div>
+                    <button
+                        onClick={sendWhatsAppQuote}
+                        className="w-full py-4 bg-[#25D366] text-white font-bold rounded hover:bg-[#128C7E] transition flex items-center justify-center gap-2"
+                    >
+                        <Phone size={20} /> REQUEST VIA WHATSAPP
+                    </button>
+                    <p className="text-xs text-center text-gray-400 mt-4">Calculated estimates are subject to final site review.</p>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default CartSidebar;
+
+```
+
+## src/components/MaterialCatalog.jsx
+```javascript
+import React, { useState } from 'react';
+import { Edit3, Trash2, Plus, Search } from 'lucide-react';
+
+const MaterialCatalog = ({
+    products,
+    activeCategory,
+    setActiveCategory,
+    isAdmin,
+    handleEditProduct,
+    handleDeleteProduct,
+    addToCart
+}) => {
+    const [searchTerm, setSearchTerm] = useState("");
+
+    return (
+        <div id="catalog" className="py-20 bg-[#F8FAFC]">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6">
+                    <h2 className="text-3xl font-bold text-[#0B1C33] flex items-center gap-4">
+                        <span className="w-12 h-1 bg-[#D49D42]"></span>
+                        MATERIAL LIBRARY
+                    </h2>
+
+                    <div className="flex flex-col md:flex-row gap-6 w-full md:w-auto">
+                        {/* Search Bar */}
+                        <div className="relative group min-w-[280px]">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#D49D42] transition-colors" size={20} />
+                            <input
+                                type="text"
+                                placeholder="Search materials..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full pl-12 pr-4 py-3 rounded-full border border-gray-200 bg-white focus:outline-none focus:border-[#D49D42] focus:ring-4 focus:ring-[#D49D42]/10 transition-all shadow-sm"
+                            />
+                        </div>
+
+                        {/* Filter Tabs */}
+                        <div className="flex flex-wrap gap-2">
+                            {['All', 'Interior', 'Exterior', 'Wall Decor'].map(cat => (
+                                <button
+                                    key={cat}
+                                    onClick={() => setActiveCategory(cat)}
+                                    className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${activeCategory === cat ? 'bg-[#0B1C33] text-white shadow-lg' : 'bg-white text-gray-500 hover:text-[#0B1C33]'}`}
+                                >
+                                    {cat}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                    {products
+                        .filter(p => (activeCategory === 'All' || p.category === activeCategory) &&
+                            (p.name.toLowerCase().includes(searchTerm.toLowerCase())))
+                        .map((product) => (
+                            <div key={product.id} className="group bg-white rounded-xl shadow-sm hover:shadow-2xl transition-all duration-300 border border-gray-100 overflow-hidden relative hover:-translate-y-2">
+                                {isAdmin && (
+                                    <div className="absolute top-2 right-2 z-10 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button onClick={() => handleEditProduct(product)} className="p-2 bg-[#0B1C33] text-white rounded-full hover:bg-[#D49D42]">
+                                            <Edit3 size={16} />
+                                        </button>
+                                        <button onClick={() => handleDeleteProduct(product.id)} className="p-2 bg-red-500 text-white rounded-full">
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
+                                )}
+                                <div className="relative h-64 overflow-hidden bg-gray-200">
+                                    <img src={product.image} alt={product.name} loading="lazy" className="w-full h-full object-cover transition duration-500 group-hover:scale-110" />
+                                    <div className="absolute top-4 left-4">
+                                        <span className="bg-[#0B1C33]/90 backdrop-blur text-white text-[0.65rem] uppercase tracking-widest px-3 py-1">
+                                            {product.stock}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div className="p-6">
+                                    <p className="text-xs text-[#D49D42] font-bold uppercase tracking-wider mb-2">{product.category}</p>
+                                    <h3 className="text-lg font-bold text-[#0B1C33] mb-4 line-clamp-2 h-14 leading-snug" title={product.name}>{product.name}</h3>
+                                    <div className="flex items-center justify-between">
+                                        <span className="font-mono text-xl text-gray-700">₦{Number(String(product.price).replace(/[^0-9.-]+/g, "")).toLocaleString()}</span>
+                                        <button
+                                            onClick={() => addToCart(product)}
+                                            className="p-3 bg-[#F8FAFC] text-[#0B1C33] rounded-full hover:bg-[#0B1C33] hover:text-white transition-colors group-hover:shadow-lg"
+                                        >
+                                            <Plus size={20} />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default MaterialCatalog;
+
+```
+
+## src/pages/Home.jsx
+```javascript
+import React, { useEffect } from 'react';
+import Hero from '../components/Hero';
+import SiteWorksGallery from '../components/SiteWorksGallery';
+import PHShowcase from '../components/PHShowcase';
+import Services from '../components/Services';
+
+const Home = ({ projects, isAdmin, handleEditProject }) => {
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, []);
+
+    return (
+        <>
+            <Hero />
+            <Services />
+            <div id="site-works">
+                <SiteWorksGallery
+                    projects={projects}
+                    isAdmin={isAdmin}
+                    handleEditProject={handleEditProject}
+                />
+            </div>
+            <PHShowcase
+                projects={projects}
+                isAdmin={isAdmin}
+                handleEditProject={handleEditProject}
+            />
+        </>
+    );
+};
+
+export default Home;
+
+```
+
+## src/pages/Products.jsx
+```javascript
+import React, { useEffect } from 'react';
+import MaterialCatalog from '../components/MaterialCatalog';
+
+const Products = ({
+    products,
+    activeCategory,
+    setActiveCategory,
+    isAdmin,
+    handleEditProduct,
+    handleDeleteProduct,
+    addToCart
+}) => {
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, []);
+
+    return (
+        <div className="pt-20"> {/* Add padding for fixed navbar */}
+            <MaterialCatalog
+                products={products}
+                activeCategory={activeCategory}
+                setActiveCategory={setActiveCategory}
+                isAdmin={isAdmin}
+                handleEditProduct={handleEditProduct}
+                handleDeleteProduct={handleDeleteProduct}
+                addToCart={addToCart}
+            />
+        </div>
+    );
+};
+
+export default Products;
+
+```
 

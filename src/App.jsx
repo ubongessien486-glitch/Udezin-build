@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense, lazy } from 'react';
+﻿import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { supabase } from './supabase';
 
@@ -15,8 +15,8 @@ const Home = lazy(() => import('./pages/Home'));
 const Products = lazy(() => import('./pages/Products'));
 
 const App = () => {
-  const [products, setProducts] = useState(INITIAL_PRODUCTS);
-  const [projects, setProjects] = useState(INITIAL_PROJECTS);
+  const [products, setProducts] = useState([]);
+  const [projects, setProjects] = useState([]);
   const [cart, setCart] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -293,10 +293,10 @@ const App = () => {
       const { error: projError } = await supabase.from('projects').upsert(projects);
       if (projError) throw projError;
 
-      alert("✅ SUCCESS: Data saved to Cloud Database!");
+      alert("âœ… SUCCESS: Data saved to Cloud Database!");
     } catch (err) {
       console.error(err);
-      alert("❌ ERROR: Could not save to cloud. Check console.");
+      alert("âŒ ERROR: Could not save to cloud. Check console.");
     } finally {
       setLoading(false);
     }
@@ -381,3 +381,4 @@ const App = () => {
 };
 
 export default App;
+

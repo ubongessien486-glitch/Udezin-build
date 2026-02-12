@@ -93,4 +93,6 @@ async function syncSupabase() {
     }
 }
 
-syncSupabase();
+// syncSupabase(); // DISABLED AUTO-SYNC: Run manually only if you want to OVERWRITE cloud data with local data. 
+console.log("Auto-sync disabled to protect Admin Panel changes. Run 'node pull_data.cjs' to update local file from Supabase.");
+

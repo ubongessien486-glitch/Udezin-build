@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Edit3, Trash2, Plus, Search } from 'lucide-react';
 
 const MaterialCatalog = ({
@@ -78,7 +78,7 @@ const MaterialCatalog = ({
                                     <p className="text-xs text-[#D49D42] font-bold uppercase tracking-wider mb-2">{product.category}</p>
                                     <h3 className="text-lg font-bold text-[#0B1C33] mb-4 line-clamp-2 h-14 leading-snug" title={product.name}>{product.name}</h3>
                                     <div className="flex items-center justify-between">
-                                        <span className="font-mono text-xl text-gray-700">₦{Number(String(product.price).replace(/[^0-9.-]+/g, "")).toLocaleString()}</span>
+                                        <span className="font-mono text-xl text-gray-700">&#8358;{Number(String(product.price).replace(/[^0-9.-]+/g, "")).toLocaleString()}</span>
                                         <button
                                             onClick={() => addToCart(product)}
                                             className="p-3 bg-[#F8FAFC] text-[#0B1C33] rounded-full hover:bg-[#0B1C33] hover:text-white transition-colors group-hover:shadow-lg"
@@ -96,3 +96,4 @@ const MaterialCatalog = ({
 };
 
 export default MaterialCatalog;
+

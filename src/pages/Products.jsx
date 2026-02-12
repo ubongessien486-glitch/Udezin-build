@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+﻿import React, { useEffect } from 'react';
 import MaterialCatalog from '../components/MaterialCatalog';
 
 const Products = ({
@@ -30,3 +30,4 @@ const Products = ({
 };
 
 export default Products;
+

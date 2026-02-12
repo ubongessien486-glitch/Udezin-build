@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Edit3, MapPin } from 'lucide-react';
 
 const SiteWorksGallery = ({ projects, isAdmin, handleEditProject }) => {
@@ -51,3 +51,4 @@ const SiteWorksGallery = ({ projects, isAdmin, handleEditProject }) => {
 };
 
 export default SiteWorksGallery;
+

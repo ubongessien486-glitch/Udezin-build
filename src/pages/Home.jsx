@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+﻿import React, { useEffect } from 'react';
 import Hero from '../components/Hero';
 import SiteWorksGallery from '../components/SiteWorksGallery';
 import PHShowcase from '../components/PHShowcase';
@@ -30,3 +30,4 @@ const Home = ({ projects, isAdmin, handleEditProject }) => {
 };
 
 export default Home;
+

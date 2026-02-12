@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { ShoppingBag, Layers, Lock, Unlock, Menu, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -93,3 +93,4 @@ const Navbar = ({ cartCount, setIsCartOpen, isAdmin, setIsAdmin }) => {
 };
 
 export default Navbar;
+

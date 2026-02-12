@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Unlock } from 'lucide-react';
 
 const AdminDashboard = ({
@@ -100,7 +100,7 @@ const AdminDashboard = ({
                                         defaultValue={editingProduct?.price}
                                         key={editingProduct ? `${editingProduct.id}-price` : 'new-price'}
                                         required
-                                        placeholder="Price (₦)"
+                                        placeholder="Price (â‚¦)"
                                         className="w-full p-3 border border-gray-200 rounded"
                                     />
                                 )}
@@ -142,3 +142,4 @@ const AdminDashboard = ({
 };
 
 export default AdminDashboard;
+

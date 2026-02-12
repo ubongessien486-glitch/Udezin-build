@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { ShoppingBag, X, Phone, Layers } from 'lucide-react';
 
 const CartSidebar = ({ cart, isOpen, onClose, removeFromCart }) => {
@@ -6,8 +6,8 @@ const CartSidebar = ({ cart, isOpen, onClose, removeFromCart }) => {
 
     const sendWhatsAppQuote = () => {
         const message = `*QUOTATION REQUEST - UDEZEin*\n\n` +
-            cart.map(item => `- ${item.name}: ₦${item.price.toLocaleString()}`).join('\n') +
-            `\n\n*Total Estimate: ₦${calculateTotal().toLocaleString()}*`;
+            cart.map(item => `- ${item.name}: â‚¦${item.price.toLocaleString()}`).join('\n') +
+            `\n\n*Total Estimate: â‚¦${calculateTotal().toLocaleString()}*`;
 
         // Replace with your actual number
         window.open(`https://wa.me/2349090689338?text=${encodeURIComponent(message)}`, '_blank');
@@ -34,7 +34,7 @@ const CartSidebar = ({ cart, isOpen, onClose, removeFromCart }) => {
                                 <img src={item.image} className="w-16 h-16 object-cover rounded" alt="" />
                                 <div className="flex-1">
                                     <h4 className="font-bold text-[#0B1C33] text-sm">{item.name}</h4>
-                                    <p className="text-[#D49D42] text-sm font-mono">₦{Number(String(item.price).replace(/[^0-9.-]+/g, "")).toLocaleString()}</p>
+                                    <p className="text-[#D49D42] text-sm font-mono">â‚¦{Number(String(item.price).replace(/[^0-9.-]+/g, "")).toLocaleString()}</p>
                                 </div>
                                 <button onClick={() => removeFromCart(index)} className="text-gray-300 hover:text-red-500"><X size={16} /></button>
                             </div>
@@ -45,7 +45,7 @@ const CartSidebar = ({ cart, isOpen, onClose, removeFromCart }) => {
                 <div className="p-6 bg-gray-50 border-t border-gray-200">
                     <div className="flex justify-between mb-4 text-lg font-bold text-[#0B1C33]">
                         <span>Est. Total</span>
-                        <span className="font-mono">₦{calculateTotal().toLocaleString()}</span>
+                        <span className="font-mono">â‚¦{calculateTotal().toLocaleString()}</span>
                     </div>
                     <button
                         onClick={sendWhatsAppQuote}
@@ -61,3 +61,4 @@ const CartSidebar = ({ cart, isOpen, onClose, removeFromCart }) => {
 };
 
 export default CartSidebar;
+

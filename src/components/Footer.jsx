@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { MapPin, Phone, Mail } from 'lucide-react';
 
 const Footer = () => {
@@ -16,9 +16,15 @@ const Footer = () => {
                             <MapPin size={16} className="text-[#D49D42]" />
                             <span>2 Shiro Street, Fadeyi, Lagos</span>
                         </div>
-                        <div className="flex items-center justify-center md:justify-start gap-3">
-                            <Phone size={16} className="text-[#D49D42]" />
-                            <span>+234 909 068 9338</span>
+                        <div className="flex flex-col items-center md:items-start gap-1">
+                            <div className="flex items-center gap-3">
+                                <Phone size={16} className="text-[#D49D42]" />
+                                <span>+234 909 068 9338</span>
+                            </div>
+                            <div className="pl-7 text-gray-400 text-xs">
+                                <p>0708 473 8330</p>
+                                <p>0806 491 3559</p>
+                            </div>
                         </div>
                         <div className="flex items-center justify-center md:justify-start gap-3">
                             <Mail size={16} className="text-[#D49D42]" />
@@ -35,12 +41,24 @@ const Footer = () => {
                         >
                             <Phone size={18} /> Chat on WhatsApp
                         </a>
-                        <p className="text-xs text-gray-500">Available 9am - 6pm</p>
+                        <p className="text-xs text-gray-500 mb-4">Available 9am - 6pm</p>
+
+                        <div className="flex gap-4 text-gray-400">
+                            <a href="https://instagram.com/udezein" target="_blank" rel="noopener noreferrer" className="hover:text-[#D49D42] transition flex flex-col items-center">
+                                <span className="text-xs">IG: udezein</span>
+                            </a>
+                            <a href="https://tiktok.com/@_udezein" target="_blank" rel="noopener noreferrer" className="hover:text-[#D49D42] transition flex flex-col items-center">
+                                <span className="text-xs">TikTok: _udezein</span>
+                            </a>
+                            <a href="https://twitter.com/udezein" target="_blank" rel="noopener noreferrer" className="hover:text-[#D49D42] transition flex flex-col items-center">
+                                <span className="text-xs">X: udezein</span>
+                            </a>
+                        </div>
                     </div>
                 </div>
 
                 <div className="border-t border-gray-800 pt-8 text-center">
-                    <p className="text-[#D49D42] text-xs tracking-widest uppercase">© 2025 UDEZEin GROUP. Building Legacies.</p>
+                    <p className="text-[#D49D42] text-xs tracking-widest uppercase">Â© 2025 Udezein. Building Legacies.</p>
                 </div>
             </div>
         </footer>
@@ -48,3 +66,4 @@ const Footer = () => {
 };
 
 export default Footer;
+
