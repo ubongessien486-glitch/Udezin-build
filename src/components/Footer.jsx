@@ -58,7 +58,7 @@ const Footer = () => {
                 </div>
 
                 <div className="border-t border-gray-800 pt-8 text-center">
-                    <p className="text-[#D49D42] text-xs tracking-widest uppercase">Â© 2025 Udezein. Building Legacies.</p>
+                    <p className="text-[#D49D42] text-xs tracking-widest uppercase">&copy; 2026 Udezein. Building Legacies.</p>
                 </div>
             </div>
         </footer>

@@ -27,9 +27,17 @@ const Hero = () => {
                 <h1 className="text-4xl md:text-6xl font-bold text-white mb-8 tracking-tight leading-tight">
                     Build with materials that will <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#D49D42] to-[#F8FAFC]">stand the test of time...</span>
                 </h1>
-                <p className="text-xl text-gray-400 max-w-2xl mx-auto mb-10 font-light">
+                <p className="text-xl text-gray-400 max-w-2xl mx-auto mb-6 font-light">
                     The company specializes in building construction services, focusing on the supply of authentic materials and expert installation.
                 </p>
+                <div className="max-w-3xl mx-auto mb-10">
+                    <span className="inline-block py-1 px-4 bg-[#D49D42]/20 border border-[#D49D42]/40 rounded-full text-[#D49D42] text-sm font-semibold tracking-wider mb-4">
+                        RC-7023059
+                    </span>
+                    <p className="text-base text-gray-400 font-light leading-relaxed">
+                        Udezein is a trusted source for high-quality Plaster of Paris (POP) products in Nigeria. With a deep understanding of the importance of a strong foundation in every construction project, we have meticulously crafted our products to deliver exceptional strength, durability, and versatility. Poised to revolutionize the construction materials industry, our products are designed to meet the needs of builders, architects, contractors, and construction companies.
+                    </p>
+                </div>
                 <div className="flex flex-col sm:flex-row justify-center gap-4">
                     <a href="/products" className="px-8 py-4 bg-[#D49D42] text-[#0B1C33] font-bold tracking-wide hover:bg-white transition-all transform hover:scale-105 inline-block">
                         VIEW PRICE LIST

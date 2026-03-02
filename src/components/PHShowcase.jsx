@@ -11,7 +11,7 @@ const PHShowcase = ({ projects, isAdmin, handleEditProject }) => {
                         EXPANDING TO PORT HARCOURT
                     </h2>
                     <p className="text-gray-400 mt-4 ml-16 max-w-xl">
-                        Bringing premium finishes to the Garden City. We now offer dedicated logistics and supply chain services for massive developments in Rivers State.
+                        Bringing premium finishes to the Garden City. We now offer dedicated logistics and supply chain services for large-scale developments in Rivers State.
                     </p>
                 </div>
 
